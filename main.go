@@ -7,12 +7,15 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
 func main() {
+	var wg sync.WaitGroup
+
 	fmt.Println(testpublic.TestPublic())
 
 	tPoloURL := url.URL{
@@ -21,25 +24,39 @@ func main() {
 		Path:   "/",
 	}
 
+	//tPoloURL := url.URL{
+	//	Scheme: "wss",
+	//	Host:   "stream.binance.com:9443",
+	//	Path:   "/ws",
+	//}
+
 	c, _, err := websocket.DefaultDialer.Dial(tPoloURL.String(), nil)
 	if err != nil {
-		// handle error
+		fmt.Println("Oops! >> ", err.Error())
+		return
 	}
 
 	fmt.Println(sendMessage(c, []byte(`{"command": "subscribe", "channel": 1002}`)))
+	//fmt.Println(sendMessage(c, []byte(`{"method": "SUBSCRIBE", "params": ["btcusdt@aggTrade"], "id": 1}`)))
+	fmt.Println("Read #INIT-SUB > ", readMessage(c))
 
 	tConsoleRead := bufio.NewReader(os.Stdin)
 
 	tFlag := false
 
 	for {
+		defer wg.Done()
 
 		// tFlag for single start
 		if !tFlag {
+			fmt.Println("Listening subscribtion.. ")
+			tReads := 0
 			tFlag = true
+			wg.Add(1)
 			go func() {
 				for {
-					fmt.Println(readMessage(c))
+					tReads++
+					fmt.Println("Read #", tReads, " > ", readMessage(c))
 					time.Sleep(time.Second * 2)
 				}
 			}()
@@ -52,11 +69,16 @@ func main() {
 		tText = strings.Replace(tText, "\r\n", "", -1)
 
 		if "kill" == tText {
+			fmt.Println("Read #LAST > ", readMessage(c))
 			break
 		}
 	}
 
 	fmt.Println(sendMessage(c, []byte(`{"command": "unsubscribe", "channel": 1002}`)))
+	//fmt.Println(sendMessage(c, []byte(`{"method": "UNSUBSCRIBE", "params": ["btcusdt@aggTrade"], "id": 132}`)))
+	fmt.Println("Read #UNSUB > ", readMessage(c))
+	fmt.Println("Read #UNSUB > ", readMessage(c))
+	fmt.Println("Read #UNSUB > ", readMessage(c))
 
 	//outMessage := []byte(`{"command": "subscribe", "channel": 1002}`)
 	//outMessage = []byte(`{"command": "unsubscribe", "channel": 1002}`)

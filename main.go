@@ -55,6 +55,8 @@ func main() {
 			for tIndex := range tSessions {
 				go func(inIndex int) {
 					for {
+						// Need external control channel to STOP those goroutines on program quiting (just for softer quiting)
+
 						// Connection or reconnection
 						if !tSessions[inIndex].IsConnected() {
 							tSessions[inIndex].Connect(tWorkURLs[inIndex]) // subscribe should check CONNECTION

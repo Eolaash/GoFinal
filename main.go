@@ -15,7 +15,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -29,7 +28,6 @@ type Session interface {
 }
 
 func main() {
-	var wg sync.WaitGroup
 	tSessions := []Session{new(poloniex.Session), new(binance.Session)}
 	tConsoleRead := bufio.NewReader(os.Stdin)
 	tFlag := false
@@ -48,15 +46,10 @@ func main() {
 
 	// CONSOLE SCAN
 	for {
-		defer wg.Done()
-		for tIndex := range tSessions {
-			defer tSessions[tIndex].Disconnect()
-		}
 
 		// tFlag for JUST single start goroutines
 		if !tFlag {
 			tFlag = true
-			wg.Add(1)
 
 			// FOR EACH Session should start goroutines (data exchange channel is single? DATASTORAGE is single mean - is multiple channels? SYNC?)
 			for tIndex := range tSessions {
@@ -90,6 +83,9 @@ func main() {
 
 		if "kill" == tText {
 			fmt.Println("Quiting app!")
+			for tIndex := range tSessions {
+				tSessions[tIndex].Disconnect()
+			}
 			break
 		}
 	}

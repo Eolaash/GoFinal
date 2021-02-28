@@ -30,7 +30,6 @@ type Session interface {
 func main() {
 	tSessions := []Session{new(poloniex.Session), new(binance.Session)}
 	tConsoleRead := bufio.NewReader(os.Stdin)
-	tFlag := false
 
 	tWorkURLs := []url.URL{{
 		Scheme: "wss",
@@ -42,40 +41,35 @@ func main() {
 		Path:   "/ws",
 	}}
 
+	// FOR EACH Session should start goroutines (data exchange channel is single? DATASTORAGE is single mean - is multiple channels? SYNC?)
+	for tIndex := range tSessions {
+		go func(inIndex int) {
+			for {
+				// Need external control channel to STOP those goroutines on program quiting (just for softer quiting)
+
+				// Connection or reconnection
+				if !tSessions[inIndex].IsConnected() {
+					tSessions[inIndex].Connect(tWorkURLs[inIndex]) // subscribe should check CONNECTION
+					tSessions[inIndex].Subscribe()                 // test subs (no checks of ALREADY SUBSCRIBED (parse data neeed to complete IsSubscribed func))
+				}
+
+				// Reader
+				if tSessions[inIndex].IsConnected() {
+					fmt.Println(tSessions[inIndex].ReadData())
+				}
+
+				// Saver
+				// ...
+
+				time.Sleep(time.Second * 2) // for testing reason
+			}
+		}(tIndex)
+	}
+
 	fmt.Println("Starting. Print <kill> to stop app...")
 
 	// CONSOLE SCAN
 	for {
-
-		// tFlag for JUST single start goroutines
-		if !tFlag {
-			tFlag = true
-
-			// FOR EACH Session should start goroutines (data exchange channel is single? DATASTORAGE is single mean - is multiple channels? SYNC?)
-			for tIndex := range tSessions {
-				go func(inIndex int) {
-					for {
-						// Need external control channel to STOP those goroutines on program quiting (just for softer quiting)
-
-						// Connection or reconnection
-						if !tSessions[inIndex].IsConnected() {
-							tSessions[inIndex].Connect(tWorkURLs[inIndex]) // subscribe should check CONNECTION
-							tSessions[inIndex].Subscribe()                 // test subs (no checks of ALREADY SUBSCRIBED (parse data neeed to complete IsSubscribed func))
-						}
-
-						// Reader
-						if tSessions[inIndex].IsConnected() {
-							fmt.Println(tSessions[inIndex].ReadData())
-						}
-
-						// Saver
-						// ...
-
-						time.Sleep(time.Second * 2) // for testing reason
-					}
-				}(tIndex)
-			}
-		}
 
 		//fmt.Print("-> ")
 		tText, _ := tConsoleRead.ReadString('\n')

@@ -80,7 +80,7 @@ func main() {
 		if "kill" == tText {
 			fmt.Println("Quiting app!")
 			for tIndex := range tSessions {
-				tSessions[tIndex].Disconnect()
+				tSessions[tIndex].Disconnect() // TODO: add channelcontols to stop goroutines
 			}
 			break
 		}

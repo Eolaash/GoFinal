@@ -29,6 +29,7 @@ type Session interface {
 
 func main() {
 	tSessions := []Session{new(poloniex.Session), new(binance.Session)}
+	tControlChan := []chan bool{make(chan bool), make(chan bool)}
 	tConsoleRead := bufio.NewReader(os.Stdin)
 
 	tWorkURLs := []url.URL{{
@@ -45,7 +46,13 @@ func main() {
 	for tIndex := range tSessions {
 		go func(inIndex int) {
 			for {
-				// Need external control channel to STOP those goroutines on program quiting (just for softer quiting)
+				// ControlChannel read (to STOP goroutines)
+				select {
+				case <-tControlChan[inIndex]:
+					fmt.Println("Goroutine stopped by command chan.")
+					return
+				default:
+				}
 
 				// Connection or reconnection
 				if !tSessions[inIndex].IsConnected() {
@@ -80,8 +87,10 @@ func main() {
 		if "kill" == tText {
 			fmt.Println("Quiting app!")
 			for tIndex := range tSessions {
-				tSessions[tIndex].Disconnect() // TODO: add channelcontols to stop goroutines
+				tControlChan[tIndex] <- true
+				tSessions[tIndex].Disconnect()
 			}
+			time.Sleep(time.Second * 3) // for testing reason
 			break
 		}
 	}

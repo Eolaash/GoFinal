@@ -62,11 +62,11 @@ func main() {
 
 				// Reader
 				if tSessions[inIndex].IsConnected() {
-					fmt.Println(tSessions[inIndex].ReadData())
-				}
+					fmt.Println(tSessions[inIndex].ReadData()) // Reader without parsing for now
 
-				// Saver
-				// ...
+					// Saver
+					// ...
+				}
 
 				time.Sleep(time.Second * 2) // for testing reason
 			}
